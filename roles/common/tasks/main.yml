@@ -1,0 +1,217 @@
+---
+- name: Run the equivalent of "apt-get update" as a separate step
+  apt:
+    update_cache: yes
+
+- name: Upgrade all packages to the latest version
+  apt:
+    name: "*"
+    state: latest
+
+- name: disable errors
+  lineinfile:
+    dest: /etc/default/apport
+    regexp: '^enabled=' 
+    line: enabled=0  
+
+- name: Check if file exist enpass.list 
+  stat:
+    path: /etc/apt/sources.list.d/enpass.list
+  register: stat_result_enpass
+
+- name: add enpass repo to source list
+  shell: echo "deb https://apt.enpass.io/ stable main" > /etc/apt/sources.list.d/enpass.list   
+  when: stat_result_enpass.stat.exists == False 
+
+- name: Check if file exist enpass.list 
+  stat:
+    path: /etc/apt/sources.list.d/virtualbox.list
+  register: stat_result_virtualbox
+
+- name: add repo virtualbox
+  shell: echo "deb http://download.virtualbox.org/virtualbox/debian $(lsb_release -sc) contrib" >> /etc/apt/sources.list.d/virtualbox.list
+  when: stat_result_virtualbox.stat.exists == False 
+
+- name: add repo for program
+  apt_repository:
+    repo: "{{ item }}"
+    state: present
+  loop:
+    - ppa:qbittorrent-team/qbittorrent-stable
+    - ppa:webupd8team/gthumb
+    - deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main 
+    - deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+    - ppa:mystic-mirage/pycharm
+    - deb https://dl.winehq.org/wine-builds/ubuntu/ xenial main
+    - ppa:ansible/ansible
+    - ppa:stefansundin/truecrypt
+    - ppa:yktooo/ppa
+    - deb http://archive.canonical.com/ xenial partner
+
+- name: add key
+  apt_key:
+    url: "{{ item }}"
+    state: present
+  loop: 
+    - https://apt.enpass.io/keys/enpass-linux.key
+    - https://www.virtualbox.org/download/oracle_vbox_2016.asc
+    - https://www.virtualbox.org/download/oracle_vbox.asc
+    - https://packages.microsoft.com/keys/microsoft.asc
+    - https://download.docker.com/linux/ubuntu/gpg
+    - https://dl.winehq.org/wine-builds/winehq.key
+
+- name: Update apt cache
+  apt: update_cache=yes cache_valid_time=3600
+
+- name: --add-architecture i386
+  shell: dpkg --add-architecture i386  
+
+- name: install wine
+  shell: apt-get install --install-recommends winehq-stable -y
+
+- name: Install a list of packages
+  apt:
+    name: "{{ packages }}"    
+  vars:
+    packages:
+    - ubuntu-restricted-extras
+    - gdebi
+    - ca-certificates
+    - gnupg-agent
+    - software-properties-common
+    - apt-transport-https
+    - mc
+    - smartmontools 
+    - gparted
+    - htop
+    - wget
+    - putty
+    - curl
+    - audacious 
+    - audacity
+    - qbittorrent
+    - vlc
+    - browser-plugin-vlc
+    - unity-tweak-tool
+    - gthumb
+    - filezilla
+    - git
+    - python3-pip
+    - python-pip
+    - tmux
+    - enpass
+    - uget
+    - gcc
+    - make
+    - lnav #Log file navigator
+    - dkms
+    - virtualbox-6.0
+    - code
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - pycharm
+    - snapd
+    - jq
+    - nmap
+    - unrar
+    - mpack 
+    - arj
+    - cabextract
+    - file-roller
+    - p7zip-rar
+    - p7zip-full
+    - unace
+    - zip
+    - unzip
+    - rar
+    - sharutils
+    - uudeview 
+    - atop
+    - ansible
+    - traceroute
+    - truecrypt
+    - plank
+    - synaptic
+    - lm-sensors
+    - indicator-sound-switcher
+    - compizconfig-settings-manager
+    - flashplugin-installer
+    #################### codecs #################
+    - ffmpeg
+    - gxine
+    - libdvdread4
+    - icedax
+    - tagtool
+    - libdvd-pkg
+    - easytag
+    - id3tool
+    - lame
+    - libxine2-ffmpeg
+    - nautilus-script-audio-convert
+    - libmad0
+    - mpg321
+    - libavcodec-extra
+    - gstreamer1.0-libav
+
+- name: Enable one-click to minimize feature
+  shell: gsettings set org.compiz.unityshell:/org/compiz/profiles/unity/plugins/unityshell/ launcher-minimize-window true
+
+- name: Enable recursive search for Nautilus
+  shell: gsettings set org.gnome.nautilus.preferences enable-interactive-search false 
+
+- name: Show username on panel
+  shell: gsettings set com.canonical.indicator.session show-real-name-on-panel true
+
+- name: install docker-compose
+  shell: curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+- name: continuous install compose
+  shell: chmod +x /usr/local/bin/docker-compose
+
+- name: Add the user to docker group
+  user:
+    name: "{{ user_name }}"
+    groups: docker
+    append: yes
+
+- name: Download app
+  get_url:
+    url: "{{ item }}"
+    dest: /tmp/
+  loop:
+    - https://go.skype.com/skypeforlinux-64.deb
+    - https://download.teamviewer.com/download/linux/teamviewer_amd64.deb
+    - http://www.srware.net/downloads/iron64.deb
+    - https://www.jetbrains.com/pycharm/download/download-thanks.html?platform=linux
+    - https://telegram.org/dl/desktop/linux
+    - https://www.dropbox.com/download?dl=packages/ubuntu/dropbox_2019.02.14_amd64.deb
+
+- name: install *.deb using dpkg
+  apt:
+    deb: '{{ item }}'
+    state: present
+  with_items:
+    - /tmp/skypeforlinux-64.deb
+    - /tmp/teamviewer_14.5.1691_amd64.deb
+    - /tmp/iron64.deb
+    - /tmp/dropbox_2019.02.14_amd64.deb
+       
+# - name: Install telegram 
+#   snap:
+#     name:
+#       - telegram-desktop
+#     state: present  
+
+- name: install telegram
+  unarchive:
+    src: /tmp/tsetup.1.8.2.tar.xz
+    dest: /opt/
+    remote_src: yes
+
+- name: link for telegram 
+  file:
+    src: /opt/Telegram/Telegram
+    dest: /usr/local/bin/telegram-desktop
+    state: link
+    
+    

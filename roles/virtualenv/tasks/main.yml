@@ -1,0 +1,72 @@
+---
+- name: install virtualenv
+  pip:
+    name: virtualenv
+    state: present
+    executable: pip3
+
+- name: install virtualenv
+  pip:
+    name: virtualenvwrapper
+    state: present 
+    executable: pip3
+
+- name: create dir for env
+  file: 
+    path: /home/{{ user_name}}/.virtualenvs
+    state: directory
+  become: yes  
+  become_user: "{{user_name}}"
+
+- name: add notes in bashrc
+  shell: "echo {{item}} >> /home/{{ user_name}}/.bashrc"
+  with_items:
+    - export WORKON_HOME=$HOME/.virtualenvs
+    - VIRTUALENVWRAPPER_PYTHON="'/usr/bin/python3'"
+    - source /usr/local/bin/virtualenvwrapper.sh
+  become: yes  
+  become_user: "{{user_name}}"  
+
+- name: create folder for git clone
+  file:
+    path: /home/{{ user_name }}/.bash/git-aware-prompt
+    state: directory
+  become: yes  
+  become_user: "{{user_name}}"  
+
+- name: git clone
+  git:
+    repo: git://github.com/jimeh/git-aware-prompt.git
+    dest: /home/{{ user_name }}/.bash/git-aware-prompt
+    
+- lineinfile: 
+    path: /home/{{ user_name }}/.bashrc
+    line: 'export PS1="\${debian_chroot:+(\$debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\] \[$txtcyn\]\$git_branch\[$txtred\]\$git_dirty\[$txtrst\]\$ "'
+  become: yes  
+  become_user: "{{user_name}}"
+
+
+- lineinfile:
+    path: /home/{{ user_name }}/.bashrc
+    insertbefore: BOF
+    line: 'source "${GITAWAREPROMPT}/main.sh"'
+    state: present
+  become: yes  
+  become_user: "{{user_name}}"
+
+
+- lineinfile:
+    path: /home/{{ user_name }}/.bashrc
+    insertbefore: BOF
+    line: 'export GITAWAREPROMPT=~/.bash/git-aware-prompt'
+    state: present    
+  become: yes  
+  become_user: "{{user_name}}"
+
+
+- name: activate virtualenvs
+  shell: source /home/{{ user_name }}/.bashrc 
+  args:
+     executable: /bin/bash
+  become: yes  
+  become_user: "{{user_name}}"   

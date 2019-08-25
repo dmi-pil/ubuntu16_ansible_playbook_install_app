@@ -1,0 +1,2 @@
+[ubuntu]
+test ansible_host=   ansible_user=test  ansible_ssh_user=test ansible_ssh_pass= ansible_become_pass=
