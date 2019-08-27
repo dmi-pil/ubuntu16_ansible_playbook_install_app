@@ -75,6 +75,7 @@
   vars:
     packages:
     - ubuntu-restricted-extras
+    - network-manager-openvpn
     - gdebi
     - ca-certificates
     - gnupg-agent
